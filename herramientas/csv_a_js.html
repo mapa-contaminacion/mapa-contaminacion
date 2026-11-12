@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Actualizar datos embebidos</title>
+<style>
+body{font-family:Arial,sans-serif;max-width:640px;margin:40px auto;padding:0 16px;color:#182d40;background:#f4f7fa}
+.card{background:#fff;border:1px solid #dce5ed;border-radius:12px;padding:20px}
+h1{font-size:20px}p{font-size:14px;line-height:1.5}
+#out{margin-top:14px;font-size:13px;padding:10px;border-radius:8px;background:#e9f2fa}
+</style>
+</head>
+<body>
+<div class="card">
+<h1>Convertir contaminantes.csv a contaminantes.js</h1>
+<p>Usa esta página solo si modificaste <code>data/contaminantes.csv</code> y quieres que el mapa funcione abriendo <code>index.html</code> con doble clic. Selecciona el CSV; se descargará <code>contaminantes.js</code>. Guárdalo en la carpeta <code>data/</code> reemplazando el anterior.</p>
+<input type="file" id="file" accept=".csv,text/csv">
+<div id="out">Esperando archivo…</div>
+</div>
+<script>
+document.getElementById('file').addEventListener('change', async e => {
+  const f = e.target.files[0]; if (!f) return;
+  const text = (await f.text()).replace(/^﻿/, '');
+  const lines = text.split(/\r?\n/).filter(Boolean).length - 1;
+  const js = '// Copia embebida del CSV para abrir index.html con doble clic (file://).\n' +
+             '// Si editas data/contaminantes.csv, regenera este archivo con herramientas/csv_a_js.html.\n' +
+             'window.RETC_CSV=' + JSON.stringify(text) + ';\n';
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([js], { type: 'text/javascript' }));
+  a.download = 'contaminantes.js'; a.click();
+  document.getElementById('out').textContent = 'Listo: ' + lines.toLocaleString('es-MX') + ' filas convertidas. Copia contaminantes.js a la carpeta data/.';
+});
+</script>
+</body>
+</html>

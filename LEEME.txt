@@ -1,0 +1,54 @@
+MAPA RETC 2024 · VERSIÓN WEB (solo HTML + CSS + JavaScript)
+=============================================================
+
+Ya no necesita Python, PHP, FastAPI ni ningún servidor. Toda la lógica de los
+agentes (antes agent.py y app.py) ahora corre en el navegador (js/agente.js).
+
+CÓMO USARLO
+1. Opción rápida: abrir index.html con doble clic (Chrome, Edge o Firefox).
+2. Publicarlo en internet: subir la carpeta completa a cualquier hosting
+   estático (GitHub Pages, Netlify, Vercel, Hostinger, etc.). No requiere configuración.
+
+Se necesita conexión a Internet para las librerías (CDN), el mapa base
+(Esri / OpenStreetMap) y los límites municipales de SEMARNAT (Vista 2).
+
+ESTRUCTURA
+  index.html                 Página principal
+  css/estilos.css            Estilos
+  js/agente.js               Lógica de agent.py en JavaScript
+  js/consulta.js             Caja "Pregúntale al agente" (antes /api/analizar)
+  js/app.js                  Mapa, filtros y vistas
+  js/interfaz.js             Panel deslizable en celular y leyenda compacta
+  data/contaminantes.csv     Datos RETC 2024 (emisiones al aire)
+  data/contaminantes.js      Copia del CSV para que funcione con doble clic
+  herramientas/csv_a_js.html Regenera data/contaminantes.js si editas el CSV
+  assets/                    Logotipos
+
+LIBRERÍAS JS USADAS
+  Leaflet 1.9.4, Leaflet.markercluster 1.5.3, Esri Leaflet 3.0.12, PapaParse 5.4.1
+
+SI ACTUALIZAS EL CSV
+  - En un hosting web se lee data/contaminantes.csv directamente.
+  - Para el modo doble clic, abre herramientas/csv_a_js.html, elige el CSV y
+    reemplaza data/contaminantes.js con el archivo descargado.
+
+Notas de los datos: gris = sin registros, no ausencia de contaminación. RETC
+reporta emisiones declaradas, no concentraciones ambientales. Solo aire.
+
+DISEÑO (versión 2)
+  - Escritorio: panel lateral con filtros, agentes y listas plegables.
+  - Celular: mapa a pantalla completa y panel inferior deslizable
+    (arrástralo o tócalo para subir/bajar). Al tocar una fuente o un
+    territorio del ranking, el panel baja para mostrar el mapa.
+  - En la Vista 2 en celular, toca la leyenda para ver la escala completa.
+  - Se conservaron los colores originales del proyecto y del mapa.
+
+EQUIVALENCIA CON LA VERSIÓN PYTHON (app.py + agent.py)
+  /api/registros  -> Agente.setRows()          (carga del CSV con PapaParse)
+  /api/resumen    -> Agente.automaticSummary() (Agente 1: estados y municipios)
+  /api/sector     -> Agente.sectorDashboard()  (ranking de contaminantes y medios)
+  /api/analizar   -> Agente.analyze()          (caja "Pregúntale al agente")
+  /api/health     -> Agente.health()           (inventario cargado, al pie del panel)
+  Vista 2 / Agente 2: se calcula en el navegador igual que en el original.
+  Se verificó con la versión Python en ejecución: mismos resultados en
+  rankings, listas, leyendas, filtros y respuestas del agente.

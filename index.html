@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0f3b5a">
+<title>CONTAMINANTES DE MÉXICO | Agente geográfico</title>
+<meta name="description" content="Mapa interactivo de emisiones al aire reportadas al RETC 2024 de SEMARNAT, por establecimiento y por municipio.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
+<link rel="stylesheet" href="css/estilos.css">
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21Z"/><circle cx="12" cy="9.5" r="2.5"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><path d="M4 5.5 9 3l6 2.5L20 3v15.5L15 21l-6-2.5L4 21Z"/><path d="M9 3v15.5M15 5.5V21"/></symbol>
+  <symbol id="i-reset" viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.4-5.7L4 8.5"/><path d="M4 4v4.5h4.5"/></symbol>
+  <symbol id="i-expand" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></symbol>
+  <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="M4 12 20 4l-6 16-2.5-6.5Z"/><path d="m11.5 13.5 3-3"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></symbol>
+</svg>
+
+<div class="app">
+  <aside id="sidebar" class="sheet" data-state="peek" aria-label="Panel de filtros y análisis">
+    <div class="sheet-grip" id="sheetGrip">
+      <button class="grip-bar" id="sheetToggle" type="button" aria-label="Expandir o contraer el panel"><span></span></button>
+      <header class="brand">
+        <div class="brand-logos" aria-label="Logotipos institucionales">
+          <span class="logo logo-itnl"><img src="assets/logo_itnl.jpg" alt="Instituto Tecnológico de Nuevo León"></span>
+          <span class="logo logo-tecnm"><img src="assets/logo_tecnm.jpg" alt="Tecnológico Nacional de México"></span>
+        </div>
+        <div class="brand-text">
+          <h1>CONTAMINANTES DE MÉXICO</h1>
+          <p>RETC SEMARNAT · emisiones al aire · 2024</p>
+        </div>
+      </header>
+    </div>
+
+    <div class="sheet-body">
+      <section class="panel" aria-labelledby="h-explorar">
+        <h2 id="h-explorar" class="panel-title">Explorar mapa</h2>
+
+        <label class="field-label field-first" for="q">Buscar establecimiento o municipio</label>
+        <div class="search">
+          <svg class="ico" aria-hidden="true"><use href="#i-search"/></svg>
+          <input id="q" type="search" placeholder="Nombre, gasolinera, municipio…" autocomplete="off" enterkeyhint="search">
+        </div>
+
+        <div class="filters">
+          <div class="filter">
+            <label class="field-label" for="state">Estado</label>
+            <select id="state"><option value="">Todos los estados</option></select>
+          </div>
+          <div class="filter">
+            <label class="field-label" for="sector">Tipo de fuente</label>
+            <select id="sector"><option value="">Todas las fuentes</option></select>
+          </div>
+          <div class="filter filter-wide only-point">
+            <label class="field-label" for="pollutant">Contaminante · Vista 1</label>
+            <select id="pollutant"><option value="">Todos los contaminantes</option></select>
+          </div>
+          <div class="filter filter-wide" id="municipalPollWrap" style="display:none">
+            <label class="field-label" for="municipalPollutant">Contaminante con emisiones · Vista 2</label>
+            <select id="municipalPollutant"></select>
+            <p class="hint" id="municipalCoverage">Solo aparecen sustancias con registros positivos y unidades comparables para el área y sector seleccionados.</p>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button id="reset" class="btn btn-quiet" type="button"><svg class="ico" aria-hidden="true"><use href="#i-reset"/></svg>Limpiar filtros</button>
+          <button id="extent" class="btn btn-quiet" type="button"><svg class="ico" aria-hidden="true"><use href="#i-expand"/></svg>Ver México</button>
+        </div>
+
+        <div class="stats stats-after">
+          <div class="stat"><strong id="nTotal">0</strong><span>Emisiones al aire</span></div>
+          <div class="stat"><strong id="nVisible">0</strong><span>Registros visibles</span></div>
+        </div>
+        <div class="only-point">
+          <div class="legend-dots" id="poll-legend">
+            <span><i style="background:#45a06b"></i>Bajas</span>
+            <span><i style="background:#ebc34b"></i>Medias</span>
+            <span><i style="background:#c52b32"></i>Altas</span>
+          </div>
+          <p class="hint">Los colores expresan magnitud relativa SOLO al seleccionar un contaminante. Gris = vista de múltiples sustancias. No representa riesgo sanitario.</p>
+        </div>
+      </section>
+
+      <section class="panel" id="auto-agent" aria-labelledby="h-agente1">
+        <div class="panel-head">
+          <span class="tag">Agente 1 · Análisis de establecimientos</span>
+        </div>
+        <h2 id="h-agente1" class="panel-title">Agente de análisis territorial</h2>
+        <p class="hint sub">Ranking de sustancias por tipo de fuente, territorios destacados y medios ambientales. Sin preguntas.</p>
+        <p class="lead" id="agentHeadline" aria-live="polite">Selecciona gasolineras u otro tipo de fuente para ver automáticamente sus contaminantes más reportados.</p>
+        <div class="stats">
+          <div class="stat"><strong id="agentSources">—</strong><span>Fuentes filtradas</span></div>
+          <div class="stat"><strong id="agentAmount" class="stat-sm">—</strong><span>Total de la sustancia</span></div>
+        </div>
+
+        <details class="group" open>
+          <summary><span>Ranking de contaminantes del sector</span><svg class="ico chev" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+          <p class="hint">Ordenado por número de establecimientos que reportaron cada sustancia. Selecciona una para explorar su distribución.</p>
+          <div id="sectorRank" class="rank"></div>
+        </details>
+        <details class="group" open>
+          <summary><span>¿Dónde se reportaron?</span><svg class="ico chev" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+          <div id="mediaReport" class="media"></div>
+          <p class="hint">Esta versión contiene exclusivamente emisiones al aire. Agua, suelo y transferencias requieren otras tablas RETC; “sin datos” no significa cero emisiones.</p>
+        </details>
+        <details class="group" open>
+          <summary><span>Estados con mayor emisión reportada</span><svg class="ico chev" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+          <div id="agentStates" class="rank"></div>
+        </details>
+        <details class="group" open>
+          <summary><span>Municipios destacados</span><svg class="ico chev" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+          <div id="agentCities" class="rank"></div>
+        </details>
+        <p class="hint method"><b>Método:</b> suma de emisiones al aire RETC 2024 para una sola sustancia con unidades iguales. Los porcentajes corresponden a los registros filtrados. No son mediciones de calidad del aire ni pruebas de que una ciudad sea la más contaminada.</p>
+      </section>
+
+      <section class="panel" id="municipal-agent" style="display:none" aria-labelledby="h-agente2">
+        <div class="panel-head">
+          <span class="tag tag-red">Agente 2 · Análisis municipal</span>
+        </div>
+        <h2 id="h-agente2" class="panel-title">Distribución territorial de emisiones</h2>
+        <p class="hint sub">Explora todas las sustancias reportadas o selecciona una para analizar su cantidad emitida. Pulsa un municipio del ranking para acercarte.</p>
+        <p class="lead" id="municipalHeadline" aria-live="polite">Selecciona una sustancia con emisiones.</p>
+        <div class="stats">
+          <div class="stat"><strong id="munSources">—</strong><span>Establecimientos</span></div>
+          <div class="stat"><strong id="munCount">—</strong><span>Municipios con registro</span></div>
+        </div>
+        <details class="group" open>
+          <summary><span>Estados con mayores emisiones</span><svg class="ico chev" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+          <div class="rank" id="munStateRank"></div>
+        </details>
+        <details class="group" open>
+          <summary><span>Municipios destacados</span><svg class="ico chev" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+          <div class="rank" id="munCityRank"></div>
+        </details>
+        <p class="hint method">Escala de rojo claro a rojo oscuro: para una sustancia indica cantidad emitida; para «Todos», cantidad de sustancias distintas reportadas. Gris = sin registro. No mide contaminación ambiental.</p>
+      </section>
+
+      <section class="panel" id="ask-agent" aria-labelledby="h-preguntar">
+        <div class="panel-head">
+          <span class="tag tag-navy">Agente de consulta</span>
+        </div>
+        <h2 id="h-preguntar" class="panel-title">Pregúntale al agente</h2>
+        <p class="hint sub">Escribe una pregunta sobre los registros. Usa el estado y el contaminante seleccionados arriba como filtro.</p>
+        <form id="askForm" class="ask" autocomplete="off">
+          <label class="sr-only" for="askInput">Pregunta</label>
+          <input id="askInput" type="text" placeholder="Ej. ¿Cuántos registros hay?" enterkeyhint="send">
+          <button class="btn btn-solid" type="submit"><svg class="ico" aria-hidden="true"><use href="#i-send"/></svg><span>Preguntar</span></button>
+        </form>
+        <div class="chips" aria-label="Preguntas de ejemplo">
+          <button type="button" class="chip">¿Cuántos registros hay?</button>
+          <button type="button" class="chip">Ranking de benceno por estado</button>
+          <button type="button" class="chip">Top establecimientos con más tolueno</button>
+          <button type="button" class="chip">¿Qué contaminantes hay?</button>
+        </div>
+        <div id="askAnswer" class="answer" aria-live="polite" hidden></div>
+      </section>
+
+      <section class="panel" aria-labelledby="h-fuentes">
+        <details class="group group-flush" open>
+          <summary><span id="h-fuentes">Fuentes mostradas</span><svg class="ico chev" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+          <div id="records" class="records"><p class="hint">Selecciona los filtros para explorar las fuentes.</p></div>
+        </details>
+      </section>
+
+      <footer class="credits">Fuente: SEMARNAT, RETC integrado 2024. Se muestran registros positivos de emisión al aire; no se suman transferencias, agua ni suelo.<br><span id="health">Cargando inventario…</span></footer>
+    </div>
+  </aside>
+
+  <main id="mapArea" aria-label="Mapa">
+    <div id="viewBar" role="group" aria-label="Cambiar vista del mapa">
+      <button id="viewPoints" class="active" type="button"><svg class="ico" aria-hidden="true"><use href="#i-pin"/></svg><span>Vista 1 · Fuentes</span></button>
+      <button id="viewMunicipios" type="button"><svg class="ico" aria-hidden="true"><use href="#i-grid"/></svg><span>Vista 2 · Municipios</span></button>
+    </div>
+    <div id="map"></div>
+    <div id="map2"></div>
+    <div id="municipioInfo"></div>
+    <div id="munLegend" tabindex="0" aria-label="Leyenda del mapa municipal"></div>
+    <div id="munStatus" role="status"></div>
+    <div id="loadPill" role="status"><span class="spinner" aria-hidden="true"></span>Cargando inventario RETC 2024…</div>
+  </main>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<script src="https://unpkg.com/esri-leaflet@3.0.12/dist/esri-leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="js/agente.js"></script>
+<script src="js/app.js"></script>
+<script src="js/consulta.js"></script>
+<script src="js/interfaz.js"></script>
+</body>
+</html>
